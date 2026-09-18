@@ -285,7 +285,17 @@ var App = (function () {
     p.y += dyPx;
     return map.unproject(p, zoom);
   }
-  function sheetOffset() { return Math.round($("map").clientHeight * 0.22); }
+  /** 시트가 덮지 않는 지도 윗부분 가운데에 핀이 오도록, 지도 중심을 아래로 내릴 픽셀. */
+  function sheetOffset(sheetId) {
+    var mapEl = $("map"), sheet = $(sheetId);
+    var mapH = mapEl.clientHeight;
+    if (!sheet || sheet.classList.contains("hidden")) return 0;
+    var mapTop = mapEl.getBoundingClientRect().top;
+    // 슬라이드 애니메이션(transform) 중이어도 레이아웃 높이로 계산한다.
+    var sheetTop = sheet.offsetParent.getBoundingClientRect().bottom - sheet.offsetHeight;
+    var visible = Math.max(80, Math.min(mapH, sheetTop - mapTop));
+    return Math.round(mapH / 2 - visible / 2);
+  }
 
   function drawSector(spot) {
     overlayLayer.clearLayers();
@@ -380,7 +390,7 @@ var App = (function () {
     renderNearby(f);
     drawRadius(f);
     setSelected(f.id);
-    if (fly) map.flyTo(centerWithOffset([f.lat, f.lng], 11, sheetOffset()), 11, { duration: 0.8 });
+    if (fly) map.flyTo(centerWithOffset([f.lat, f.lng], 11, sheetOffset("nearby-panel")), 11, { duration: 0.8 });
   }
   function renderNearby(f) {
     var res = nearbyOf(f);
@@ -434,7 +444,7 @@ var App = (function () {
     setSelected(s.id);
     var z = Math.max(map.getZoom(), 14);
     if (fly === false) return;
-    map.flyTo(centerWithOffset([s.lat, s.lng], z, sheetOffset()), z, { duration: 0.8 });
+    map.flyTo(centerWithOffset([s.lat, s.lng], z, sheetOffset("spot-detail")), z, { duration: 0.8 });
   }
   function hideDetail() {
     state.spotId = null;

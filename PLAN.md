@@ -24,10 +24,10 @@
 
 ## M2 여기 말고 여기 + 상세 (AC3 · AC4 · AC8)
 
-- [ ] 지역 화면에 그 지역 유명 스팟 칩(`famous-chip`, `data-id`). 지역에 유명 스팟이 없으면 최근접 유명 스팟 1곳을 거리와 함께 칩으로
-- [ ] 유명 칩·마커 클릭 → `nearby-panel`: 반경 30km 숨은 스팟(시드 + 사용자) 하버사인 거리순, 없으면 최근접 3곳. 항목(`nearby-item`)에 썸네일·장소 이름·**거리 한 개**(`N.N km`, 1km 미만도 km, m 금지)·방향(있으면). 항목 안에 다른 거리 숫자 금지. 동률은 `id` 순으로 결정적
-- [ ] 항목 클릭 → `spot-detail`: 큰 사진, `taken-at`(「YYYY-MM-DD HH:mm」 또는 「시각 정보 없음」), 방향(있으면 「북동 45°」 + 지도 위 부채꼴 폴리곤), `nearest-famous`(「호미곶에서 3.2km」), `coords`(소수 4자리), 캡션
-- [ ] 패널·상세 닫기 버튼
+- [x] 지역 화면에 그 지역 유명 스팟 칩(`famous-chip`, `data-id`). 지역에 유명 스팟이 없으면 최근접 유명 스팟 1곳을 거리와 함께 칩으로
+- [x] 유명 칩·마커 클릭 → `nearby-panel`: 반경 30km 숨은 스팟(시드 + 사용자) 하버사인 거리순, 없으면 최근접 3곳. 항목(`nearby-item`)에 썸네일·장소 이름·**거리 한 개**(`N.N km`, 1km 미만도 km, m 금지)·방향(있으면). 항목 안에 다른 거리 숫자 금지. 동률은 `id` 순으로 결정적
+- [x] 항목 클릭 → `spot-detail`: 큰 사진, `taken-at`(「YYYY-MM-DD HH:mm」 또는 「시각 정보 없음」), 방향(있으면 「북동 45°」 + 지도 위 부채꼴 폴리곤), `nearest-famous`(「호미곶에서 3.2km」), `coords`(소수 4자리), 캡션
+- [x] 패널·상세 닫기 버튼
 - 검증: `npx playwright test -g "AC3|AC4|AC8"`
 
 ## M3 업로드 + 저장 (AC5 · AC6)
@@ -51,3 +51,4 @@
 |---|---|---|---|
 | 13:08 | 1 | M0 하네스: git init·vendor 복사·build-seed(vm으로 app.js 표 재사용)·make-synthetic·spots.js 6장(데모 지역 jeju). 결정: 시드 `file`은 index.html 기준 경로, 합성은 `seed/synthetic/`에 출력, 유명지 `region`은 지역표 최근접으로 런타임 계산 | `npm run seed` OK · `--list` 10개 |
 | 13:20 | 1 | M1 지도+시드 핀: index.html·styles.css·app.js(FAMOUS 25곳·REGIONS 93곳·칩·검색·훅), store.js·upload.js 분리. 결정: 지역 flyTo 줌은 그 지역 스팟 최대 거리로 9~12 자동, 칩 순서 = 사진 수 → 주요 도시 | AC1·AC2·AC9 3 passed |
+| 13:27 | 1 | M2 여기 말고 여기+상세: famous-chip(근처 사진 수→표 순), nearby-panel 30km 거리순/최근접 3, spot-detail(부채꼴·좌표·유명지 거리), 닫기. 시트가 덮지 않는 지도 윗부분에 핀이 오도록 중심 오프셋 계산 | AC3·AC4·AC8 3 passed |
