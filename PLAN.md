@@ -4,12 +4,12 @@
 
 ## M0 하네스 (목표 15분) — 앱 코드 없이 도구만 돈다
 
-- [ ] `git init` → `.gitignore` 확인 → 첫 커밋 `M0 하네스`
-- [ ] `npm install` (package.json 에 고정된 버전 그대로). `npx playwright install` 은 **실행하지 않는다** — `~/.cache/ms-playwright/chromium-1234` 가 이미 있다. 없을 때만 `npx playwright install chromium`
-- [ ] `vendor/` 에 복사: `node_modules/leaflet/dist/leaflet.js`, `leaflet.css`, `images/` 폴더, `node_modules/exifr/dist/full.umd.js` → `vendor/exifr.umd.js`
-- [ ] `scripts/build-seed.mjs`: `seed/photos/*.jpg|jpeg` → exifr(**Buffer 입력**)로 GPS·DateTimeOriginal·GPSImgDirection → GPS 없으면 `seed/captions.txt` 의 위도·경도(방향) 폴백 → 둘 다 없으면 콘솔에 `제외:` → 지역표 최근접 → 유명지 최근접 km → 캡션 → `seed/spots.js` 출력. `seed/demo-upload/` 는 읽지 않음
-- [ ] `scripts/make-synthetic.mjs`: 시드 사진 0장일 때만 쓰는 합성 6장(jpeg-js + piexifjs 로 GPS 삽입, 포항 근처 좌표). `build-seed` 가 0장을 감지하면 자동 호출
-- [ ] `npm run seed` 성공 → `seed/spots.js` 생성 확인. `npx playwright test --list` 로 테스트 10개(AC0~AC9)가 나열되는지 확인
+- [x] `git init` → `.gitignore` 확인 → 첫 커밋 `M0 하네스`
+- [x] `npm install` (package.json 에 고정된 버전 그대로). `npx playwright install` 은 **실행하지 않는다** — `~/.cache/ms-playwright/chromium-1234` 가 이미 있다. 없을 때만 `npx playwright install chromium`
+- [x] `vendor/` 에 복사: `node_modules/leaflet/dist/leaflet.js`, `leaflet.css`, `images/` 폴더, `node_modules/exifr/dist/full.umd.js` → `vendor/exifr.umd.js`
+- [x] `scripts/build-seed.mjs`: `seed/photos/*.jpg|jpeg` → exifr(**Buffer 입력**)로 GPS·DateTimeOriginal·GPSImgDirection → GPS 없으면 `seed/captions.txt` 의 위도·경도(방향) 폴백 → 둘 다 없으면 콘솔에 `제외:` → 지역표 최근접 → 유명지 최근접 km → 캡션 → `seed/spots.js` 출력. `seed/demo-upload/` 는 읽지 않음
+- [x] `scripts/make-synthetic.mjs`: 시드 사진 0장일 때만 쓰는 합성 6장(jpeg-js + piexifjs 로 GPS 삽입, 포항 근처 좌표). `build-seed` 가 0장을 감지하면 자동 호출
+- [x] `npm run seed` 성공 → `seed/spots.js` 생성 확인. `npx playwright test --list` 로 테스트 10개(AC0~AC9)가 나열되는지 확인
 - 검증: `npm run seed && npx playwright test --list`
 
 ## M1 지도 + 시드 핀 (AC1 · AC2 · AC9)
@@ -49,3 +49,4 @@
 
 | 시각 | 반복 | 한 일 | 테스트 결과 |
 |---|---|---|---|
+| 13:08 | 1 | M0 하네스: git init·vendor 복사·build-seed(vm으로 app.js 표 재사용)·make-synthetic·spots.js 6장(데모 지역 jeju). 결정: 시드 `file`은 index.html 기준 경로, 합성은 `seed/synthetic/`에 출력, 유명지 `region`은 지역표 최근접으로 런타임 계산 | `npm run seed` OK · `--list` 10개 |
