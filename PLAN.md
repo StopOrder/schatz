@@ -32,9 +32,9 @@
 
 ## M3 업로드 + 저장 (AC5 · AC6)
 
-- [ ] 「내 사진 올리기」 → `upload-input` change → exifr.gps + parse(DateTimeOriginal, GPSImgDirection) → 좌표 있으면 핀 드롭 애니메이션(`user-marker`) → 지도 이동 → `spot-detail`
-- [ ] GPS 없음·파싱 실패 → `manual-place-hint` 표시(상단 토스트) → 다음 지도 클릭 위치에 핀. 마커 위를 눌러도 그 좌표에 배치(마커 클릭 핸들러가 수동 모드일 때는 배치로 위임) → 상세
-- [ ] IndexedDB 에 blob, localStorage 에 메타 → 로드 시 복원 → 시드와 함께 근처 목록에 포함
+- [x] 「내 사진 올리기」 → `upload-input` change → exifr.gps + parse(DateTimeOriginal, GPSImgDirection) → 좌표 있으면 핀 드롭 애니메이션(`user-marker`) → 지도 이동 → `spot-detail`
+- [x] GPS 없음·파싱 실패 → `manual-place-hint` 표시(상단 토스트) → 다음 지도 클릭 위치에 핀. 마커 위를 눌러도 그 좌표에 배치(마커 클릭 핸들러가 수동 모드일 때는 배치로 위임) → 상세
+- [x] IndexedDB 에 blob, localStorage 에 메타 → 로드 시 복원 → 시드와 함께 근처 목록에 포함
 - 검증: `npx playwright test -g "AC5|AC6"`
 
 ## M4 네트워크 봉인 + 데모 마감 (AC7 · 전체)
@@ -52,3 +52,4 @@
 | 13:08 | 1 | M0 하네스: git init·vendor 복사·build-seed(vm으로 app.js 표 재사용)·make-synthetic·spots.js 6장(데모 지역 jeju). 결정: 시드 `file`은 index.html 기준 경로, 합성은 `seed/synthetic/`에 출력, 유명지 `region`은 지역표 최근접으로 런타임 계산 | `npm run seed` OK · `--list` 10개 |
 | 13:20 | 1 | M1 지도+시드 핀: index.html·styles.css·app.js(FAMOUS 25곳·REGIONS 93곳·칩·검색·훅), store.js·upload.js 분리. 결정: 지역 flyTo 줌은 그 지역 스팟 최대 거리로 9~12 자동, 칩 순서 = 사진 수 → 주요 도시 | AC1·AC2·AC9 3 passed |
 | 13:27 | 1 | M2 여기 말고 여기+상세: famous-chip(근처 사진 수→표 순), nearby-panel 30km 거리순/최근접 3, spot-detail(부채꼴·좌표·유명지 거리), 닫기. 시트가 덮지 않는 지도 윗부분에 핀이 오도록 중심 오프셋 계산 | AC3·AC4·AC8 3 passed |
+| 13:32 | 1 | M3 업로드+저장: upload.js(exifr gps/parse → 핀 드롭 → 상세), 수동 배치(토스트·지도/마커 클릭 위임), store.js(IDB blob + localStorage 메타, 실패 시 메모리). 결정: 사용자 스팟 이름은 파일명, 캡션은 「지역 · 유명지에서 Nkm」 자동 | AC5·AC6 2 passed |
