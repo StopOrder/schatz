@@ -39,10 +39,10 @@
 
 ## M4 네트워크 봉인 + 데모 마감 (AC7 · 전체)
 
-- [ ] 외부 요청 감사: 폰트·CDN·아이콘 등 OSM 외 요청 0. Leaflet 기본 마커 이미지 경로가 `vendor/images/` 를 가리키는지 확인
-- [ ] `seed/demo-upload/` 가 비어 있으면 `seed/photos` 에서 GPS 있는 **마지막** 사진 1장을 복사해 넣고, 시드 빌드에서 그 파일명을 제외해 재빌드(중복 핀 방지). 사진이 0장이면 `tests/fixtures/with-gps.jpg` 복사. demo-upload 사진에 GPS EXIF 가 없으면 piexifjs 로 captions 좌표를 심은 사본으로 교체
-- [ ] `README.md` 의 「15:00 확인 절차」를 실제 칩 이름·유명 스팟 이름으로 갱신
-- [ ] 전체 `npm test` 녹색 → 커밋 → `DONE` 파일에 요약(통과 테스트 수·시드 사진 수·데모 지역·미완 항목) 작성
+- [x] 외부 요청 감사: 폰트·CDN·아이콘 등 OSM 외 요청 0. Leaflet 기본 마커 이미지 경로가 `vendor/images/` 를 가리키는지 확인
+- [x] `seed/demo-upload/` 가 비어 있으면 `seed/photos` 에서 GPS 있는 **마지막** 사진 1장을 복사해 넣고, 시드 빌드에서 그 파일명을 제외해 재빌드(중복 핀 방지). 사진이 0장이면 `tests/fixtures/with-gps.jpg` 복사. demo-upload 사진에 GPS EXIF 가 없으면 piexifjs 로 captions 좌표를 심은 사본으로 교체
+- [x] `README.md` 의 「15:00 확인 절차」를 실제 칩 이름·유명 스팟 이름으로 갱신
+- [x] 전체 `npm test` 녹색 → 커밋 → `DONE` 파일에 요약(통과 테스트 수·시드 사진 수·데모 지역·미완 항목) 작성
 - 검증: `npm test`
 
 ## 진행 로그 (에이전트가 추가한다)
@@ -53,3 +53,4 @@
 | 13:20 | 1 | M1 지도+시드 핀: index.html·styles.css·app.js(FAMOUS 25곳·REGIONS 93곳·칩·검색·훅), store.js·upload.js 분리. 결정: 지역 flyTo 줌은 그 지역 스팟 최대 거리로 9~12 자동, 칩 순서 = 사진 수 → 주요 도시 | AC1·AC2·AC9 3 passed |
 | 13:27 | 1 | M2 여기 말고 여기+상세: famous-chip(근처 사진 수→표 순), nearby-panel 30km 거리순/최근접 3, spot-detail(부채꼴·좌표·유명지 거리), 닫기. 시트가 덮지 않는 지도 윗부분에 핀이 오도록 중심 오프셋 계산 | AC3·AC4·AC8 3 passed |
 | 13:32 | 1 | M3 업로드+저장: upload.js(exifr gps/parse → 핀 드롭 → 상세), 수동 배치(토스트·지도/마커 클릭 위임), store.js(IDB blob + localStorage 메타, 실패 시 메모리). 결정: 사용자 스팟 이름은 파일명, 캡션은 「지역 · 유명지에서 Nkm」 자동 | AC5·AC6 2 passed |
+| 13:38 | 1 | M4 마감: 외부 요청 감사(OSM 타일만, Leaflet imagePath=vendor/images/, Math.random·fetch 0). 결정: demo-upload 에 GPS 있는 jeju-songaksan-trail.jpg 가 이미 있고 시드와 겹치지 않아 복사·재빌드 생략. README 15:00 절차를 실제 이름으로 갱신, DONE 작성 | `npm test` 10 passed |

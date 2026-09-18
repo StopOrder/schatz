@@ -1,0 +1,9 @@
+# DONE — 샤츠(Schatz) · 랄프톤 2026 「여행」
+- 완료 시각: 2026-09-18 13:38 KST (반복 1회)
+- 테스트: `npm test` 10/10 통과 (AC0~AC9, Playwright 1.62.1, chromium-1234, file://)
+- 시드 사진: 6장 (seed/photos, 전부 EXIF GPS) → seed/spots.js. 유명 스팟 25곳, 지역표 93곳
+- 데모 지역: 제주(jeju, 사진 4장) → 첫 칩. 데모 유명 스팟: 성산일출봉 → 「여기 말고 여기 · 3곳」(0.4 / 2.1 / 20.2 km)
+- 라이브 업로드: seed/demo-upload/jeju-songaksan-trail.jpg (GPS 있음, 시드 미포함)
+- 산출물: index.html · styles.css · app.js · store.js · upload.js · seed/spots.js · vendor/ · scripts/build-seed.mjs · scripts/make-synthetic.mjs
+- 외부 요청: OSM 타일만. API 키·LLM·Math.random·CDN 0
+- 미완 항목: 없음. (참고: seed/pending/maple-lake-castle.jpg 는 장소 미확인으로 보류)
