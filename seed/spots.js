@@ -1,5 +1,5 @@
 // seed/spots.js — 빌드 산출물(scripts/build-seed.mjs). 손으로 고치지 않는다.
-// 생성 2026-09-18T04:07:23.656Z · 사진 6장 · 데모 지역 jeju
+// 생성 2026-09-18T04:12:03.261Z · 사진 6장 · 데모 지역 jeju
 window.SEED_SPOTS = [
   {
     "id": "gangneung-tetrapod",

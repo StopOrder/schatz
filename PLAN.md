@@ -14,12 +14,12 @@
 
 ## M1 지도 + 시드 핀 (AC1 · AC2 · AC9)
 
-- [ ] `index.html` 골격: `phone-frame` → 헤더 한 줄 「유명한 데 말고, 여기도 예뻐요.」 → 지역 칩 바 → `map` → 하단 「내 사진 올리기」 버튼(숨은 `upload-input`). `styles.css`
-- [ ] Leaflet 초기화(중심 36.3,127.8 줌 7, OSM 타일). 프레임: 430px 이하 뷰포트에서 폭 100%, 1280 폭에서 360~440px 가운데 정렬
-- [ ] `famous` 표 12곳 이상 + 붉은 divIcon 마커(`famous-marker`, `data-id`)
-- [ ] `seed/spots.js` 로드 → 초록 썸네일 divIcon 마커(`seed-marker`, `data-id`)
-- [ ] 지역표 60곳 이상 + 칩(데모 지역 첫 번째, `data-region data-lat data-lng`) + 검색 입력(지역표 부분 일치) → `flyTo` + `region-title`
-- [ ] `window.__yeogido = { center(), state() }` 테스트 훅
+- [x] `index.html` 골격: `phone-frame` → 헤더 한 줄 「유명한 데 말고, 여기도 예뻐요.」 → 지역 칩 바 → `map` → 하단 「내 사진 올리기」 버튼(숨은 `upload-input`). `styles.css`
+- [x] Leaflet 초기화(중심 36.3,127.8 줌 7, OSM 타일). 프레임: 430px 이하 뷰포트에서 폭 100%, 1280 폭에서 360~440px 가운데 정렬
+- [x] `famous` 표 12곳 이상 + 붉은 divIcon 마커(`famous-marker`, `data-id`)
+- [x] `seed/spots.js` 로드 → 초록 썸네일 divIcon 마커(`seed-marker`, `data-id`)
+- [x] 지역표 60곳 이상 + 칩(데모 지역 첫 번째, `data-region data-lat data-lng`) + 검색 입력(지역표 부분 일치) → `flyTo` + `region-title`
+- [x] `window.__yeogido = { center(), state() }` 테스트 훅
 - 검증: `npx playwright test -g "AC1|AC2|AC9"`
 
 ## M2 여기 말고 여기 + 상세 (AC3 · AC4 · AC8)
@@ -50,3 +50,4 @@
 | 시각 | 반복 | 한 일 | 테스트 결과 |
 |---|---|---|---|
 | 13:08 | 1 | M0 하네스: git init·vendor 복사·build-seed(vm으로 app.js 표 재사용)·make-synthetic·spots.js 6장(데모 지역 jeju). 결정: 시드 `file`은 index.html 기준 경로, 합성은 `seed/synthetic/`에 출력, 유명지 `region`은 지역표 최근접으로 런타임 계산 | `npm run seed` OK · `--list` 10개 |
+| 13:20 | 1 | M1 지도+시드 핀: index.html·styles.css·app.js(FAMOUS 25곳·REGIONS 93곳·칩·검색·훅), store.js·upload.js 분리. 결정: 지역 flyTo 줌은 그 지역 스팟 최대 거리로 9~12 자동, 칩 순서 = 사진 수 → 주요 도시 | AC1·AC2·AC9 3 passed |

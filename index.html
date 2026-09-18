@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>샤츠 — 유명한 데 말고, 여기도 예뻐요.</title>
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="phone-frame" data-testid="phone-frame">
+    <header class="top">
+      <div class="brand-row">
+        <span class="brand" id="app-name">샤츠</span>
+        <p class="tagline">유명한 데 말고, 여기도 예뻐요.</p>
+      </div>
+      <div class="search-row">
+        <input id="region-search" data-testid="region-search" type="search" autocomplete="off"
+               placeholder="지역 검색 (예: 포항, 강릉)" aria-label="지역 검색">
+      </div>
+      <div class="chips" id="region-chips" aria-label="지역"></div>
+      <div id="region-head" class="region-head hidden">
+        <div class="region-title-row">
+          <h2 id="region-title" data-testid="region-title"></h2>
+          <button id="region-back" class="link-btn" type="button">전국</button>
+        </div>
+        <div class="chips famous-chips" id="famous-chips" aria-label="유명 스팟"></div>
+      </div>
+    </header>
+
+    <div class="map-wrap">
+      <div id="map" data-testid="map"></div>
+      <div id="manual-place-hint" class="toast hidden" data-testid="manual-place-hint" role="status"></div>
+      <div id="msg" class="toast toast-msg hidden" role="status"></div>
+    </div>
+
+    <footer class="bottom">
+      <button id="upload-btn" class="upload-btn" type="button">내 사진 올리기</button>
+      <input id="upload-input" data-testid="upload-input" type="file" accept="image/jpeg,.jpg,.jpeg" class="visually-hidden">
+    </footer>
+
+    <section id="nearby-panel" data-testid="nearby-panel" class="sheet sheet-nearby hidden" aria-label="여기 말고 여기">
+      <div class="sheet-head">
+        <div>
+          <div class="sheet-kicker" id="nearby-famous"></div>
+          <h3 class="sheet-title" id="nearby-title">여기 말고 여기</h3>
+        </div>
+        <button class="close-btn" id="nearby-close" type="button" aria-label="닫기">×</button>
+      </div>
+      <p class="sheet-note" id="nearby-note"></p>
+      <div class="items" id="nearby-items"></div>
+    </section>
+
+    <section id="spot-detail" data-testid="spot-detail" class="sheet sheet-detail hidden" aria-label="스팟 상세">
+      <div class="sheet-head">
+        <h3 class="sheet-title" id="detail-name"></h3>
+        <button class="close-btn" id="detail-close" type="button" aria-label="닫기">×</button>
+      </div>
+      <div class="detail-photo"><img id="detail-img" alt=""></div>
+      <p class="detail-caption" id="detail-caption"></p>
+      <ul class="detail-meta">
+        <li><span class="k">촬영</span> <span data-testid="taken-at" id="detail-taken"></span></li>
+        <li id="detail-heading-row"><span class="k">방향</span> <span id="detail-heading"></span></li>
+        <li><span class="k">유명지</span> <span data-testid="nearest-famous" id="detail-nearest"></span></li>
+        <li><span class="k">좌표</span> <span data-testid="coords" id="detail-coords"></span></li>
+      </ul>
+    </section>
+  </div>
+
+  <script src="vendor/leaflet.js"></script>
+  <script src="vendor/exifr.umd.js"></script>
+  <script src="seed/spots.js"></script>
+  <script src="store.js"></script>
+  <script src="upload.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

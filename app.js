@@ -175,7 +175,392 @@ function formatTakenAt(iso) {
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
 }
 
-// ---- 브라우저에서만 실행 ----
-if (typeof window !== "undefined" && typeof document !== "undefined" && typeof window.__yeogidoBoot === "function") {
-  window.__yeogidoBoot();
+// ---- 앱 (브라우저에서만) ----
+
+var App = (function () {
+  var map = null;
+  var famousLayer = null, seedLayer = null, userLayer = null, overlayLayer = null;
+  var famousMarkers = {}, spotMarkers = {};
+  var userSpots = [];
+  var state = { region: null, famousId: null, spotId: null, manual: null, query: "" };
+  var $ = function (id) { return document.getElementById(id); };
+  var RADIUS_KM = 30;
+  var MAJOR_CITIES = ["seoul", "busan", "gangneung", "gyeongju", "pohang", "yeosu", "jeonju", "daegu", "incheon", "sokcho"];
+
+  // ---- 데이터 ----
+  function seedSpots() { return (window.SEED_SPOTS || []).map(function (s) { s.source = s.source || "seed"; return s; }); }
+  function allSpots() { return seedSpots().concat(userSpots); }
+  function spotById(id) { var all = allSpots(); for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i]; return null; }
+  function famousById(id) { for (var i = 0; i < FAMOUS.length; i++) if (FAMOUS[i].id === id) return FAMOUS[i]; return null; }
+  function regionBySlug(slug) { for (var i = 0; i < REGIONS.length; i++) if (REGIONS[i].slug === slug) return REGIONS[i]; return null; }
+  function spotSrc(spot) { return spot.url || spot.file || ""; }
+  function famousRegion(f) { if (!f._region) f._region = nearestRegion(f).item.slug; return f._region; }
+
+  function byIdAsc(a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; }
+
+  /** 지역별 사진 수. 데모 지역 = 최다(동률은 slug 순). */
+  function regionCounts() {
+    var counts = {};
+    seedSpots().forEach(function (s) { counts[s.region] = (counts[s.region] || 0) + 1; });
+    return counts;
+  }
+  function chipRegions() {
+    var counts = regionCounts();
+    var withPhotos = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a] || (a < b ? -1 : 1); });
+    var out = [];
+    withPhotos.concat(MAJOR_CITIES).forEach(function (slug) {
+      if (out.length >= 8 || out.indexOf(slug) !== -1 || !regionBySlug(slug)) return;
+      out.push(slug);
+    });
+    return out.map(regionBySlug);
+  }
+  function searchRegions(q) {
+    q = (q || "").trim().toLowerCase();
+    if (!q) return chipRegions();
+    return REGIONS.filter(function (r) { return r.name.toLowerCase().indexOf(q) !== -1 || r.slug.indexOf(q) !== -1; }).slice(0, 8);
+  }
+
+  /** 유명 스팟 기준 근처 숨은 스팟: 30km 안 거리순, 없으면 최근접 3곳. 동률은 id 순(결정적). */
+  function nearbyOf(f) {
+    var rows = allSpots().map(function (s) { return { spot: s, km: haversineKm(f, s) }; });
+    rows.sort(function (a, b) { return a.km - b.km || byIdAsc(a.spot, b.spot); });
+    var within = rows.filter(function (r) { return r.km <= RADIUS_KM; });
+    return { rows: within.length ? within : rows.slice(0, 3), within: within.length > 0 };
+  }
+  function famousInRegion(slug) {
+    var list = FAMOUS.filter(function (f) { return famousRegion(f) === slug; });
+    list.sort(function (a, b) {
+      var na = nearbyOf(a).rows.filter(function (r) { return r.km <= RADIUS_KM; }).length;
+      var nb = nearbyOf(b).rows.filter(function (r) { return r.km <= RADIUS_KM; }).length;
+      return nb - na || FAMOUS.indexOf(a) - FAMOUS.indexOf(b);
+    });
+    return list;
+  }
+  function regionZoom(region) {
+    var pts = FAMOUS.filter(function (f) { return famousRegion(f) === region.slug; })
+      .concat(allSpots().filter(function (s) { return s.region === region.slug; }));
+    var maxKm = 0;
+    pts.forEach(function (p) { maxKm = Math.max(maxKm, haversineKm(region, p)); });
+    if (maxKm < 5) return 12;
+    if (maxKm < 11) return 11;
+    if (maxKm < 22) return 10;
+    if (maxKm < 45) return 9;
+    return 8;
+  }
+
+  // ---- 지도·마커 ----
+  function pinIcon(cls, testid, id, inner, size) {
+    var html = '<div class="pin ' + cls + '" data-testid="' + testid + '" data-id="' + id + '">' + (inner || "") + "</div>";
+    return L.divIcon({ className: "pin-wrap", html: html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function addFamousMarkers() {
+    FAMOUS.forEach(function (f) {
+      var m = L.marker([f.lat, f.lng], { icon: pinIcon("pin-famous", "famous-marker", f.id, '<span class="pin-label">' + esc(f.name) + "</span>", 18), title: f.name, zIndexOffset: 100 });
+      m.on("click", function (e) { onMarkerClick(e, function () { selectFamous(f.id, true); }); });
+      m.addTo(famousLayer);
+      famousMarkers[f.id] = m;
+    });
+  }
+  function addSpotMarker(spot, drop) {
+    var isUser = spot.source === "user";
+    var src = spotSrc(spot);
+    var inner = src ? '<img src="' + esc(src) + '" alt="">' : "";
+    var cls = (isUser ? "pin-user" : "pin-seed") + (src ? "" : " no-img") + (drop ? " drop" : "");
+    var m = L.marker([spot.lat, spot.lng], { icon: pinIcon(cls, isUser ? "user-marker" : "seed-marker", spot.id, inner, 36), title: spot.name, zIndexOffset: isUser ? 300 : 200 });
+    m.on("click", function (e) { onMarkerClick(e, function () { showDetail(spot.id); }); });
+    m.addTo(isUser ? userLayer : seedLayer);
+    spotMarkers[spot.id] = m;
+    return m;
+  }
+  /** 수동 배치 모드면 마커 클릭도 그 자리 배치로 처리한다(Leaflet 마커 클릭은 지도로 안 올라온다). */
+  function onMarkerClick(e, fn) {
+    if (state.manual) { placeManual(e.latlng); return; }
+    fn();
+  }
+
+  function centerWithOffset(latlng, zoom, dyPx) {
+    var p = map.project(L.latLng(latlng), zoom);
+    p.y += dyPx;
+    return map.unproject(p, zoom);
+  }
+  function sheetOffset() { return Math.round($("map").clientHeight * 0.22); }
+
+  function drawSector(spot) {
+    overlayLayer.clearLayers();
+    if (spot.heading === null || spot.heading === undefined) return;
+    var r = 250, spread = 22, pts = [[spot.lat, spot.lng]];
+    for (var b = spot.heading - spread; b <= spot.heading + spread; b += 4) {
+      var rad = (b * Math.PI) / 180;
+      pts.push([spot.lat + (r * Math.cos(rad)) / 111320, spot.lng + (r * Math.sin(rad)) / (111320 * Math.cos((spot.lat * Math.PI) / 180))]);
+    }
+    L.polygon(pts, { color: "#2f9e5b", weight: 1, fillColor: "#2f9e5b", fillOpacity: 0.35, interactive: false }).addTo(overlayLayer);
+  }
+  function drawRadius(f) {
+    overlayLayer.clearLayers();
+    L.circle([f.lat, f.lng], { radius: RADIUS_KM * 1000, color: "#d93b3b", weight: 1, dashArray: "4 6", fillColor: "#d93b3b", fillOpacity: 0.04, interactive: false }).addTo(overlayLayer);
+  }
+  function setSelected(id) {
+    document.querySelectorAll(".pin.selected").forEach(function (el) { el.classList.remove("selected"); });
+    if (!id) return;
+    var el = document.querySelector('.pin[data-id="' + id + '"]');
+    if (el) el.classList.add("selected");
+  }
+
+  // ---- 화면: 지역 ----
+  function renderRegionChips() {
+    var box = $("region-chips");
+    box.innerHTML = "";
+    var list = searchRegions(state.query);
+    if (!list.length) { box.innerHTML = '<span class="chip chip-empty">일치하는 지역이 없어요</span>'; return; }
+    list.forEach(function (r) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (state.region === r.slug ? " active" : "");
+      b.setAttribute("data-testid", "region-chip");
+      b.setAttribute("data-region", r.slug);
+      b.setAttribute("data-lat", r.lat);
+      b.setAttribute("data-lng", r.lng);
+      b.textContent = r.name;
+      b.addEventListener("click", function () { selectRegion(r.slug); });
+      box.appendChild(b);
+    });
+  }
+  function renderFamousChips() {
+    var box = $("famous-chips");
+    box.innerHTML = "";
+    if (!state.region) return;
+    var region = regionBySlug(state.region);
+    var list = famousInRegion(state.region);
+    var fallback = false;
+    if (!list.length) { list = [nearestFamous(region).item]; fallback = true; }
+    list.forEach(function (f) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip chip-famous" + (state.famousId === f.id ? " active" : "");
+      b.setAttribute("data-testid", "famous-chip");
+      b.setAttribute("data-id", f.id);
+      b.innerHTML = '<span class="tag">몰림</span>' + esc(f.name) + (fallback ? " · " + formatKm(haversineKm(region, f)) : "");
+      b.addEventListener("click", function () { selectFamous(f.id, true); });
+      box.appendChild(b);
+    });
+  }
+  function selectRegion(slug) {
+    var r = regionBySlug(slug);
+    if (!r) return;
+    state.region = slug; state.famousId = null;
+    hideNearby(); hideDetail();
+    $("region-title").textContent = r.name;
+    $("region-head").classList.remove("hidden");
+    renderRegionChips(); renderFamousChips();
+    map.flyTo([r.lat, r.lng], regionZoom(r), { duration: 0.8 });
+  }
+  function clearRegion() {
+    state.region = null; state.famousId = null;
+    hideNearby(); hideDetail();
+    $("region-head").classList.add("hidden");
+    renderRegionChips();
+    map.flyTo([36.3, 127.8], 7, { duration: 0.8 });
+  }
+
+  // ---- 화면: 여기 말고 여기 ----
+  function selectFamous(id, fly) {
+    var f = famousById(id);
+    if (!f) return;
+    state.famousId = id;
+    if (!state.region || famousRegion(f) !== state.region) {
+      state.region = famousRegion(f);
+      $("region-title").textContent = regionBySlug(state.region).name;
+      $("region-head").classList.remove("hidden");
+      renderRegionChips();
+    }
+    renderFamousChips();
+    hideDetail();
+    renderNearby(f);
+    drawRadius(f);
+    setSelected(f.id);
+    if (fly) map.flyTo(centerWithOffset([f.lat, f.lng], 11, sheetOffset()), 11, { duration: 0.8 });
+  }
+  function renderNearby(f) {
+    var res = nearbyOf(f);
+    $("nearby-famous").textContent = "몰림 · " + f.name + " — " + f.line;
+    $("nearby-title").textContent = "여기 말고 여기 · " + res.rows.length + "곳";
+    $("nearby-note").textContent = res.within ? "반경 " + RADIUS_KM + "km 안, 가까운 순" : RADIUS_KM + "km 안에는 아직 없어요. 가장 가까운 " + res.rows.length + "곳";
+    var box = $("nearby-items");
+    box.innerHTML = "";
+    res.rows.forEach(function (r) {
+      var s = r.spot;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "item";
+      b.setAttribute("data-testid", "nearby-item");
+      b.setAttribute("data-id", s.id);
+      var head = headingLabel(s.heading);
+      b.innerHTML = '<img class="thumb" src="' + esc(spotSrc(s)) + '" alt="">' +
+        '<div class="item-body"><div class="item-name">' + esc(s.name) + "</div>" +
+        '<div class="item-meta"><b>' + formatKm(r.km) + "</b>" + (head ? " · " + esc(head) : "") +
+        (s.source === "user" ? ' · <span class="item-user">내 사진</span>' : "") + "</div></div>";
+      b.addEventListener("click", function () { showDetail(s.id); });
+      box.appendChild(b);
+    });
+    $("nearby-panel").classList.remove("hidden");
+  }
+  function hideNearby() {
+    $("nearby-panel").classList.add("hidden");
+    if (!state.spotId) overlayLayer.clearLayers();
+    setSelected(state.spotId);
+  }
+
+  // ---- 화면: 상세 ----
+  function showDetail(id, fly) {
+    var s = spotById(id);
+    if (!s) return;
+    state.spotId = id;
+    var nf = famousById(s.nearestFamous && s.nearestFamous.id) || nearestFamous(s).item;
+    var km = s.nearestFamous && isFinite(s.nearestFamous.km) ? s.nearestFamous.km : haversineKm(nf, s);
+    $("detail-name").textContent = s.name;
+    var img = $("detail-img");
+    img.src = spotSrc(s);
+    $("detail-caption").textContent = s.caption || "";
+    $("detail-taken").textContent = formatTakenAt(s.takenAt);
+    var head = headingLabel(s.heading);
+    $("detail-heading-row").classList.toggle("hidden", !head);
+    $("detail-heading").textContent = head || "";
+    $("detail-nearest").textContent = nf.name + "에서 " + formatKm(km);
+    $("detail-coords").textContent = s.lat.toFixed(4) + ", " + s.lng.toFixed(4);
+    $("spot-detail").classList.remove("hidden");
+    drawSector(s);
+    setSelected(s.id);
+    var z = Math.max(map.getZoom(), 14);
+    if (fly === false) return;
+    map.flyTo(centerWithOffset([s.lat, s.lng], z, sheetOffset()), z, { duration: 0.8 });
+  }
+  function hideDetail() {
+    state.spotId = null;
+    $("spot-detail").classList.add("hidden");
+    var f = state.famousId && famousById(state.famousId);
+    if (f && !$("nearby-panel").classList.contains("hidden")) { drawRadius(f); setSelected(f.id); }
+    else { overlayLayer.clearLayers(); setSelected(null); }
+  }
+
+  // ---- 업로드·저장 ----
+  function toast(id, text) {
+    var el = $(id);
+    el.textContent = text;
+    el.classList.remove("hidden");
+  }
+  function hideToast(id) { $(id).classList.add("hidden"); }
+  var msgTimer = null;
+  function flash(text) {
+    toast("msg", text);
+    if (msgTimer) clearTimeout(msgTimer);
+    msgTimer = setTimeout(function () { hideToast("msg"); }, 3000);
+  }
+
+  function buildUserSpot(pending, p) {
+    var region = nearestRegion(p).item;
+    var nf = nearestFamous(p);
+    var km = Math.round(nf.km * 10) / 10;
+    var name = (pending.file && pending.file.name ? pending.file.name.replace(/\.[^.]+$/, "") : "내 사진");
+    return {
+      id: pending.id, file: null, name: name, lat: p.lat, lng: p.lng,
+      takenAt: pending.exif ? pending.exif.takenAt : null,
+      heading: pending.exif && isFinite(pending.exif.heading) ? pending.exif.heading : null,
+      region: region.slug, nearestFamous: { id: nf.item.id, km: km },
+      caption: region.name + " · " + nf.item.name + "에서 " + km + "km",
+      source: "user", placed: pending.exif && pending.exif.lat !== null ? "exif" : "manual"
+    };
+  }
+  /** 좌표가 정해진 업로드를 핀으로 박고 저장한 뒤 상세로. */
+  function addUserSpot(pending, p) {
+    var spot = buildUserSpot(pending, p);
+    spot.url = URL.createObjectURL(pending.file);
+    userSpots.push(spot);
+    addSpotMarker(spot, true);
+    var meta = {}; Object.keys(spot).forEach(function (k) { if (k !== "url") meta[k] = spot[k]; });
+    Store.addMeta(meta);
+    return Store.putBlob(spot.id, pending.file).then(function (ok) {
+      if (!ok) flash("이 브라우저는 사진을 저장하지 못해요. 새로고침하면 사진만 사라져요.");
+      if (state.region !== spot.region) { state.region = spot.region; state.famousId = null; $("region-title").textContent = nearestRegion(p).item.name; $("region-head").classList.remove("hidden"); renderRegionChips(); renderFamousChips(); }
+      hideNearby();
+      setTimeout(function () { showDetail(spot.id); }, 250);
+    });
+  }
+  function enterManualPlace(pending, text) {
+    state.manual = pending;
+    toast("manual-place-hint", text);
+    map.getContainer().classList.add("placing");
+  }
+  function placeManual(latlng) {
+    var pending = state.manual;
+    if (!pending) return;
+    state.manual = null;
+    hideToast("manual-place-hint");
+    map.getContainer().classList.remove("placing");
+    addUserSpot(pending, { lat: latlng.lat, lng: latlng.lng });
+  }
+  function restoreUserSpots() {
+    var metas = Store.loadMeta();
+    metas.sort(byIdAsc);
+    return Promise.all(metas.map(function (m) {
+      return Store.getBlob(m.id).then(function (blob) {
+        var spot = {}; Object.keys(m).forEach(function (k) { spot[k] = m[k]; });
+        spot.source = "user";
+        spot.url = blob ? URL.createObjectURL(blob) : "";
+        userSpots.push(spot);
+        addSpotMarker(spot, false);
+      });
+    }));
+  }
+
+  // ---- 부트 ----
+  function initMap() {
+    L.Icon.Default.imagePath = "vendor/images/";
+    map = L.map("map", { center: [36.3, 127.8], zoom: 7, zoomControl: false, attributionControl: true });
+    L.control.zoom({ position: "topright" }).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19, subdomains: "abc", attribution: "© OpenStreetMap"
+    }).addTo(map);
+    overlayLayer = L.layerGroup().addTo(map);
+    famousLayer = L.layerGroup().addTo(map);
+    seedLayer = L.layerGroup().addTo(map);
+    userLayer = L.layerGroup().addTo(map);
+    map.on("click", function (e) { if (state.manual) placeManual(e.latlng); });
+  }
+  function bindUi() {
+    $("region-back").addEventListener("click", clearRegion);
+    $("nearby-close").addEventListener("click", function () { state.famousId = null; renderFamousChips(); hideNearby(); });
+    $("detail-close").addEventListener("click", hideDetail);
+    var search = $("region-search");
+    search.addEventListener("input", function () { state.query = search.value; renderRegionChips(); });
+    search.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      var list = searchRegions(search.value);
+      if (list.length) { selectRegion(list[0].slug); search.value = ""; state.query = ""; renderRegionChips(); search.blur(); }
+    });
+    Upload.bind($("upload-input"), $("upload-btn"));
+    $("app-name").textContent = APP_NAME;
+    document.title = APP_NAME + " — 유명한 데 말고, 여기도 예뻐요.";
+  }
+  function boot() {
+    initMap();
+    addFamousMarkers();
+    seedSpots().forEach(function (s) { addSpotMarker(s, false); });
+    renderRegionChips();
+    bindUi();
+    restoreUserSpots();
+    window.__yeogido = {
+      center: function () { var c = map.getCenter(); return { lat: c.lat, lng: c.lng }; },
+      state: function () { return { region: state.region, famousId: state.famousId, spotId: state.spotId, manual: !!state.manual, zoom: map.getZoom(), seed: seedSpots().length, user: userSpots.length }; },
+      map: function () { return map; }
+    };
+  }
+
+  return { boot: boot, addUserSpot: addUserSpot, enterManualPlace: enterManualPlace, showDetail: showDetail, selectFamous: selectFamous, selectRegion: selectRegion };
+})();
+
+if (typeof window !== "undefined" && typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", App.boot);
+  else App.boot();
 }
