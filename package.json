@@ -1,0 +1,17 @@
+{
+  "name": "yeogido",
+  "private": true,
+  "description": "샤츠(Schatz) — 유명지 옆 숨은 스팟을 사진 EXIF로 지도에 박는 국내 사진 스팟 지도 (랄프톤 2026)",
+  "scripts": {
+    "seed": "node scripts/build-seed.mjs",
+    "test": "playwright test",
+    "test:list": "playwright test --list"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "exifr": "7.1.3",
+    "leaflet": "1.9.4",
+    "jpeg-js": "0.4.4",
+    "piexifjs": "1.0.6"
+  }
+}
