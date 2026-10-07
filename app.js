@@ -285,11 +285,17 @@ var App = (function () {
     p.y += dyPx;
     return map.unproject(p, zoom);
   }
+  /** styles.css 의 데스크톱 분기점(900px)과 같아야 한다. */
+  var desktopQuery = window.matchMedia("(min-width: 900px)");
+  function isDesktop() { return desktopQuery.matches; }
+
   /** 시트가 덮지 않는 지도 윗부분 가운데에 핀이 오도록, 지도 중심을 아래로 내릴 픽셀. */
   function sheetOffset(sheetId) {
     var mapEl = $("map"), sheet = $(sheetId);
     var mapH = mapEl.clientHeight;
     if (!sheet || sheet.classList.contains("hidden")) return 0;
+    // 데스크톱(왼쪽 패널 배치)에서는 시트가 지도를 덮지 않는다.
+    if (isDesktop()) return 0;
     var mapTop = mapEl.getBoundingClientRect().top;
     // 슬라이드 애니메이션(transform) 중이어도 레이아웃 높이로 계산한다.
     var sheetTop = sheet.offsetParent.getBoundingClientRect().bottom - sheet.offsetHeight;
@@ -537,6 +543,8 @@ var App = (function () {
     seedLayer = L.layerGroup().addTo(map);
     userLayer = L.layerGroup().addTo(map);
     map.on("click", function (e) { if (state.manual) placeManual(e.latlng); });
+    // 폰↔데스크톱 배치가 바뀌면 지도 컨테이너 크기가 달라지므로 타일을 다시 깐다.
+    desktopQuery.addEventListener("change", function () { map.invalidateSize(); });
   }
   function bindUi() {
     $("region-back").addEventListener("click", clearRegion);

@@ -158,3 +158,31 @@ body {
 .detail-meta { list-style: none; margin: 0; padding: 0; font-size: 13px; color: var(--ink); }
 .detail-meta li { padding: 5px 0; border-top: 1px solid var(--line); display: flex; gap: 10px; }
 .detail-meta .k { color: var(--muted); flex: 0 0 40px; }
+
+/* 데스크톱 — 왼쪽 패널 + 전체 지도. 분기점은 app.js 의 desktopQuery 와 같아야 한다.
+   래퍼 없이 기존 형제 요소를 그리드 행으로 쌓는다: 헤더 / 상세 / 목록(스크롤) / 업로드 버튼, 지도는 2열 전체. */
+@media (min-width: 900px) {
+  body { background: var(--bg); }
+  .phone-frame {
+    max-width: none; height: 100vh; margin: 0; border-radius: 0; box-shadow: none;
+    display: grid; grid-template-columns: 360px 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .top { grid-area: 1 / 1; border-bottom: 0; }
+  /* 상세와 목록은 같은 행을 쓴다. 모바일처럼 상세가 열리면 목록은 가려진다(DOM 순서: 목록 → 상세). */
+  .sheet-nearby, .sheet-detail { grid-area: 2 / 1; overflow-y: auto; }
+  .sheet-nearby:has(+ .sheet-detail:not(.hidden)) { display: none; }
+  .bottom { grid-area: 3 / 1; }
+  .map-wrap { grid-area: 1 / 2 / 4 / 3; min-height: 0; border-left: 1px solid var(--line); }
+
+  .sheet {
+    position: static; border-radius: 0; box-shadow: none; max-height: none;
+    border-top: 1px solid var(--line); animation: fade-in .2s ease-out;
+  }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .sheet-detail { z-index: auto; }
+  .detail-photo img { max-height: 240px; }
+  .items { gap: 8px; }
+  .chips { flex-wrap: wrap; overflow: visible; }
+  .tagline { white-space: normal; }
+}

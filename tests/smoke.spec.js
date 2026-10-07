@@ -151,14 +151,27 @@ test('AC8 같은 조작을 두 번 하면 같은 목록이 나온다(랜덤 없�
   expect(second).toEqual(first);
 });
 
-test('AC9 폰 폭에서 가로 스크롤이 없고, 데스크톱에서는 폰 프레임 안에 그려진다', async ({ page }) => {
+test('AC9 폰 폭에서 가로 스크롤이 없고, 데스크톱에서는 왼쪽 패널 + 전체 지도로 그려진다', async ({ page }) => {
   await open(page);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
   expect(overflow, '390px 폭에서 가로 스크롤이 생긴다').toBe(false);
   await page.setViewportSize({ width: 1280, height: 800 });
   const frame = page.getByTestId('phone-frame');
   await expect(frame).toBeVisible();
-  const w = (await frame.boundingBox()).width;
-  expect(w).toBeGreaterThanOrEqual(360);
-  expect(w).toBeLessThanOrEqual(440);
+  expect((await frame.boundingBox()).width, '데스크톱에서 프레임이 창 폭을 채운다').toBeGreaterThanOrEqual(1270);
+  const search = await page.getByTestId('region-search').boundingBox();
+  expect(search.x + search.width, '검색창(패널)은 왼쪽 320~400px 안').toBeLessThanOrEqual(400);
+  expect(search.x + search.width).toBeGreaterThanOrEqual(300);
+  const map = await page.getByTestId('map').boundingBox();
+  expect(map.x, '지도는 패널 오른쪽에서 시작').toBeGreaterThanOrEqual(340);
+  expect(map.width, '지도가 나머지 폭을 채운다').toBeGreaterThanOrEqual(700);
+  expect(map.height, '지도가 세로를 채운다').toBeGreaterThanOrEqual(780);
+  // 상세를 열어도 지도를 덮지 않고 패널 안에 선다.
+  await gotoDemoRegion(page);
+  await page.getByTestId('famous-chip').first().click();
+  await page.getByTestId('nearby-item').first().click();
+  const detail = await page.getByTestId('spot-detail').boundingBox();
+  expect(detail.x + detail.width).toBeLessThanOrEqual(400);
+  const overflowDesktop = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+  expect(overflowDesktop, '1280px 폭에서 가로 스크롤이 생긴다').toBe(false);
 });
